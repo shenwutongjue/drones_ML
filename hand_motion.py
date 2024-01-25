@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[1]:
+# In[3]:
 
 
 import numpy as np
@@ -30,14 +30,16 @@ from sklearn.svm import SVC
 import seaborn as sns
 import matplotlib.pyplot as plt
 
+import pickle
 
-# In[2]:
+
+# In[4]:
 
 
 get_ipython().system('jupyter notebook --version')
 
 
-# In[3]:
+# In[5]:
 
 
 hand_df = pd.read_csv("data/sensorFile.csv", na_values=['?'])
@@ -63,7 +65,7 @@ X_test = hand_df_test.drop(['Gesture'], axis = 1)
 print(X)
 
 
-# In[4]:
+# In[66]:
 
 
 # data preprocessing
@@ -85,7 +87,15 @@ sns.heatmap(correlation_matrix, annot=True, cmap="coolwarm", fmt=".2f")
 plt.show()
 
 
-# In[5]:
+# In[68]:
+
+
+
+data_point = np.array([14326, 28217, 36235, 31276, 32500])
+X_standardized1 = standard_scaler.fit_transform(data_point)
+
+
+# In[7]:
 
 
 # Check for datapoint similarity
@@ -106,42 +116,51 @@ sns.pairplot(data_standardized, hue='class', palette='viridis')
 plt.show()
 
 
-# In[6]:
+# In[33]:
 
 
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
-# Spliting data
-
-#np.random.seed(0)
-
-X_train, X_valid, y_train, y_valid = train_test_split(X_standardized,y, train_size=0.75, random_state = 0)
-
-
-X_test = X_test_standardized
+best_k = None
+best_accuracy = 0
 
 print('\n k\tacc_train\tacc_valid\tacc_test\tMean CVS')
 
-for k in range (1, 33+1, 2): 
+for k in range(1, 33+1, 2):
     KNN_Model = KNeighborsClassifier(n_neighbors=k)
     KNN_Model.fit(X_train, y_train)
 
-    y_predict_train = KNN_Model.predict(X_train)
     y_predict_valid = KNN_Model.predict(X_valid)
-    y_predict_test = KNN_Model.predict(X_test)
-
-
-    acc_train = accuracy_score(y_train, y_predict_train)
     acc_valid = accuracy_score(y_valid, y_predict_valid)
-    acc_test = accuracy_score(y_test, y_predict_test)
-    
+
+    if acc_valid > best_accuracy:
+        best_accuracy = acc_valid
+        best_k = k
+
     cvs = cross_val_score(KNN_Model, X_train, y_train, cv=10)
     
-    print('\n',k, '\t', acc_train, '\t', acc_valid, '\t', acc_test, '\t', np.mean(cvs))
-    
+    print('\n', k, '\t', acc_train, '\t', acc_valid, '\t', acc_test, '\t', np.mean(cvs))
+
+print('\nBest k:', best_k)
+
+# Now use the best_k to train the model and make predictions
+best_model = KNeighborsClassifier(n_neighbors=best_k)
+best_model.fit(X_train, y_train)
+
+y_predict_train = best_model.predict(X_train)
+y_predict_valid = best_model.predict(X_valid)
+y_predict_test = best_model.predict(X_test)
+
+acc_train = accuracy_score(y_train, y_predict_train)
+acc_valid = accuracy_score(y_valid, y_predict_valid)
+acc_test = accuracy_score(y_test, y_predict_test)
+
+print('\nAccuracy on Train set:', acc_train)
+print('Accuracy on Validation set:', acc_valid)
+print('Accuracy on Test set:', acc_test)
 
 
-# In[7]:
+# In[9]:
 
 
 #Decision Tree
@@ -160,7 +179,7 @@ plt.title("Decision tree trained on all features")
 plt.show()
 
 
-# In[8]:
+# In[10]:
 
 
 # tunning tree depth
@@ -198,7 +217,7 @@ plt.title(f"Decision tree trained on d = {best_d}")
 plt.show()
 
 
-# In[9]:
+# In[11]:
 
 
 X_train, X_valid, y_train, y_valid = train_test_split(X_standardized,y, train_size=0.75, random_state = 0)
@@ -214,7 +233,7 @@ cvs = cross_val_score(svm, X_standardized, y, cv = 10)
 print("default SVC cvs:",cvs)
 
 
-# In[10]:
+# In[12]:
 
 
 # Define hyperparameters to try
@@ -253,7 +272,7 @@ print(f"\nTest Set Accuracy with Best Hyperparameters: {test_accuracy}")
 print("Best Hyperparameters:", best_params)
 
 
-# In[11]:
+# In[13]:
 
 
 #1 vs. Rest
@@ -295,7 +314,7 @@ print(f"\nTest Set Accuracy with Best Hyperparameters: {test_accuracy}")
 print("Best Hyperparameters:", best_params)
 
 
-# In[38]:
+# In[14]:
 
 
 # 1 vs. 1
@@ -317,7 +336,6 @@ for C in C_values:
             clf1 = OneVsOneClassifier(SVC(C=C, kernel=kernel, gamma=gamma))
             clf1.fit(X_train, y_train)
 
-            y_pred_valid = clf1.predict(X_valid)
             valid_accuracy = accuracy_score(y_valid, y_pred_valid)
 
             print(f"C={C}, Kernel={kernel}, Gamma={gamma}, Validation Accuracy={valid_accuracy}")
@@ -335,6 +353,93 @@ y_pred_test = final_clf1.predict(X_test)
 test_accuracy = accuracy_score(y_test, y_pred_test)
 print(f"\nTest Set Accuracy with Best Hyperparameters: {test_accuracy}")
 print("Best Hyperparameters:", best_params)
+
+
+
+# In[51]:
+
+
+#model persistance
+from tempfile import mkdtemp
+
+savedir = mkdtemp()
+
+import os
+filename = os.path.join(savedir, 'OneVsRest.joblib')
+joblib.dump(final_clf, filename)  
+
+
+# In[52]:
+
+
+loaded_svc = joblib.load(filename)
+y_pred_test = loaded_svc.predict(X_test)
+test_accuracy = accuracy_score(y_test, y_pred_test)
+print(f"\nTest Set Accuracy with Best Hyperparameters: {test_accuracy}")
+
+
+# In[53]:
+
+
+filename1 = os.path.join(savedir, 'dts.joblib')
+joblib.dump(dts, filename1)  
+
+
+# In[54]:
+
+
+loaded_svc = joblib.load(filename1)
+y_pred_test = loaded_svc.predict(X_test)
+test_accuracy = accuracy_score(y_test, y_pred_test)
+print(f"\nTest Set Accuracy with Best Hyperparameters: {test_accuracy}")
+
+
+# In[55]:
+
+
+filename2 = os.path.join(savedir, 'OneVsOne.joblib')
+joblib.dump(final_clf1, filename2)  
+
+
+# In[56]:
+
+
+loaded_svc = joblib.load(filename2)
+y_pred_test = loaded_svc.predict(X_test)
+test_accuracy = accuracy_score(y_test, y_pred_test)
+print(f"\nTest Set Accuracy with Best Hyperparameters: {test_accuracy}")
+
+
+# In[57]:
+
+
+filename3 = os.path.join(savedir, 'SVM.joblib')
+joblib.dump(final_svm, filename3)  
+
+
+# In[58]:
+
+
+loaded_svc = joblib.load(filename3)
+y_pred_test = loaded_svc.predict(X_test)
+test_accuracy = accuracy_score(y_test, y_pred_test)
+print(f"\nTest Set Accuracy with Best Hyperparameters: {test_accuracy}")
+
+
+# In[59]:
+
+
+filename4 = os.path.join(savedir, 'KNN.joblib')
+joblib.dump(best_model, filename4)  
+
+
+# In[60]:
+
+
+loaded_svc = joblib.load(filename1)
+y_pred_test = loaded_svc.predict(X_test)
+test_accuracy = accuracy_score(y_test, y_pred_test)
+print(f"\nTest Set Accuracy with Best Hyperparameters: {test_accuracy}")
 
 
 # In[ ]:
