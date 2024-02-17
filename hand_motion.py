@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[22]:
+# In[10]:
 
 
 import numpy as np
@@ -33,13 +33,13 @@ import matplotlib.pyplot as plt
 import pickle
 
 
-# In[23]:
+# In[11]:
 
 
-get_ipython().system('jupyter notebook --version')
+get_ipython().system('python --version')
 
 
-# In[24]:
+# In[12]:
 
 
 hand_df = pd.read_csv("data/sensorFile.csv", na_values=['?'])
@@ -65,7 +65,7 @@ X_test = hand_df_test.drop(['Gesture'], axis = 1)
 print(X)
 
 
-# In[25]:
+# In[13]:
 
 
 # data preprocessing
@@ -87,7 +87,7 @@ sns.heatmap(correlation_matrix, annot=True, cmap="coolwarm", fmt=".2f")
 plt.show()
 
 
-# In[ ]:
+# In[14]:
 
 
 #Testing Standardization for Smaller Inputs
@@ -109,7 +109,21 @@ X_standardized1 = standard_scaler.fit_transform(X_test1)
 print("\n",X_standardized1)
 
 
-# In[29]:
+# In[15]:
+
+
+#save the scaler
+import pickle
+
+file_path = "standard_scaler.pkl"
+
+with open(file_path, 'wb') as f:
+    pickle.dump(standard_scaler, f)
+
+print("StandardScaler object is pickled and saved to", file_path)
+
+
+# In[16]:
 
 
 # Check for datapoint similarity
@@ -130,7 +144,7 @@ sns.pairplot(data_standardized, hue='class', palette='viridis')
 plt.show()
 
 
-# In[34]:
+# In[17]:
 
 
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
@@ -185,7 +199,18 @@ print('Accuracy on Validation set:', acc_valid)
 print('Accuracy on Test set:', acc_test)
 
 
-# In[35]:
+# In[18]:
+
+
+# Pickle the best model, you can use the same method to pickle other models
+file_path = "best_knn_model.pkl"
+with open(file_path, 'wb') as f:
+    pickle.dump(best_model, f)
+
+print("Best model pickled and saved to", file_path)
+
+
+# In[ ]:
 
 
 #Decision Tree
@@ -204,7 +229,7 @@ plt.title("Decision tree trained on all features")
 plt.show()
 
 
-# In[36]:
+# In[ ]:
 
 
 # tunning tree depth
@@ -242,7 +267,7 @@ plt.title(f"Decision tree trained on d = {best_d}")
 plt.show()
 
 
-# In[37]:
+# In[16]:
 
 
 X_train, X_valid, y_train, y_valid = train_test_split(X_standardized,y, train_size=0.75, random_state = 0)
@@ -258,7 +283,7 @@ cvs = cross_val_score(svm, X_standardized, y, cv = 10)
 print("default SVC cvs:",cvs)
 
 
-# In[38]:
+# In[17]:
 
 
 # Define hyperparameters to try
@@ -297,11 +322,16 @@ print(f"\nTest Set Accuracy with Best Hyperparameters: {test_accuracy}")
 print("Best Hyperparameters:", best_params)
 
 
-# In[39]:
+# In[19]:
 
 
 #1 vs. Rest
 from sklearn.multiclass import OneVsRestClassifier
+
+X_train = X_standardized
+y_train = y
+
+X_test = X_test_standardized
 
 # Define hyperparameters to try
 C_values = [0.001, 0.01, 0.1, 0.5, 1, 5, 10, 100]
@@ -319,7 +349,7 @@ for C in C_values:
             clf = OneVsRestClassifier(SVC(C=C, kernel=kernel, gamma=gamma))
             clf.fit(X_train, y_train)
 
-            y_pred_valid = svm.predict(X_valid)
+            y_pred_valid = clf.predict(X_valid)
             valid_accuracy = accuracy_score(y_valid, y_pred_valid)
 
             print(f"C={C}, Kernel={kernel}, Gamma={gamma}, Validation Accuracy={valid_accuracy}")
@@ -339,7 +369,7 @@ print(f"\nTest Set Accuracy with Best Hyperparameters: {test_accuracy}")
 print("Best Hyperparameters:", best_params)
 
 
-# In[47]:
+# In[ ]:
 
 
 # 1 vs. 1
@@ -381,7 +411,7 @@ print("Best Hyperparameters:", best_params)
 
 
 
-# In[41]:
+# In[25]:
 
 
 #model persistance
@@ -395,7 +425,27 @@ filename = os.path.join(savedir, 'OneVsRest.joblib')
 joblib.dump(final_clf, filename)  
 
 
-# In[42]:
+# In[8]:
+
+
+from joblib import load
+
+# Specify the path to the joblib file
+file_path = 'OneVsRest.joblib'
+
+# Load the joblib file
+loaded_data = load(file_path)
+
+
+# In[ ]:
+
+
+
+
+y_pred_test = loaded_data.predict(X_test_input)
+
+
+# In[4]:
 
 
 loaded_svc = joblib.load(filename)
@@ -404,14 +454,14 @@ test_accuracy = accuracy_score(y_test, y_pred_test)
 print(f"\nTest Set Accuracy with Best Hyperparameters: {test_accuracy}")
 
 
-# In[43]:
+# In[ ]:
 
 
 filename1 = os.path.join(savedir, 'dts.joblib')
 joblib.dump(dts, filename1)  
 
 
-# In[44]:
+# In[ ]:
 
 
 loaded_svc = joblib.load(filename1)
@@ -420,14 +470,14 @@ test_accuracy = accuracy_score(y_test, y_pred_test)
 print(f"\nTest Set Accuracy with Best Hyperparameters: {test_accuracy}")
 
 
-# In[48]:
+# In[ ]:
 
 
 filename2 = os.path.join(savedir, 'OneVsOne.joblib')
 joblib.dump(final_clf1, filename2)  
 
 
-# In[49]:
+# In[ ]:
 
 
 loaded_svc = joblib.load(filename2)
@@ -436,14 +486,14 @@ test_accuracy = accuracy_score(y_test, y_pred_test)
 print(f"\nTest Set Accuracy with Best Hyperparameters: {test_accuracy}")
 
 
-# In[50]:
+# In[ ]:
 
 
 filename3 = os.path.join(savedir, 'SVM.joblib')
 joblib.dump(final_svm, filename3)  
 
 
-# In[51]:
+# In[ ]:
 
 
 loaded_svc = joblib.load(filename3)
@@ -452,7 +502,7 @@ test_accuracy = accuracy_score(y_test, y_pred_test)
 print(f"\nTest Set Accuracy with Best Hyperparameters: {test_accuracy}")
 
 
-# In[52]:
+# In[ ]:
 
 
 filename4 = os.path.join(savedir, 'KNN.joblib')
@@ -466,4 +516,10 @@ loaded_svc = joblib.load(filename4)
 y_pred_test = loaded_svc.predict(X_test)
 test_accuracy = accuracy_score(y_test, y_pred_test)
 print(f"\nTest Set Accuracy with Best Hyperparameters: {test_accuracy}")
+
+
+# In[ ]:
+
+
+
 
