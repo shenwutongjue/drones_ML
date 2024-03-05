@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[10]:
+# In[1]:
 
 
 import numpy as np
@@ -33,13 +33,13 @@ import matplotlib.pyplot as plt
 import pickle
 
 
-# In[11]:
+# In[2]:
 
 
 get_ipython().system('python --version')
 
 
-# In[12]:
+# In[3]:
 
 
 hand_df = pd.read_csv("data/sensorFile.csv", na_values=['?'])
@@ -65,7 +65,7 @@ X_test = hand_df_test.drop(['Gesture'], axis = 1)
 print(X)
 
 
-# In[13]:
+# In[4]:
 
 
 # data preprocessing
@@ -87,7 +87,7 @@ sns.heatmap(correlation_matrix, annot=True, cmap="coolwarm", fmt=".2f")
 plt.show()
 
 
-# In[14]:
+# In[5]:
 
 
 #Testing Standardization for Smaller Inputs
@@ -109,7 +109,7 @@ X_standardized1 = standard_scaler.fit_transform(X_test1)
 print("\n",X_standardized1)
 
 
-# In[15]:
+# In[6]:
 
 
 #save the scaler
@@ -123,7 +123,7 @@ with open(file_path, 'wb') as f:
 print("StandardScaler object is pickled and saved to", file_path)
 
 
-# In[16]:
+# In[7]:
 
 
 # Check for datapoint similarity
@@ -144,7 +144,7 @@ sns.pairplot(data_standardized, hue='class', palette='viridis')
 plt.show()
 
 
-# In[17]:
+# In[8]:
 
 
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
@@ -199,7 +199,7 @@ print('Accuracy on Validation set:', acc_valid)
 print('Accuracy on Test set:', acc_test)
 
 
-# In[18]:
+# In[9]:
 
 
 # Pickle the best model, you can use the same method to pickle other models
@@ -210,7 +210,7 @@ with open(file_path, 'wb') as f:
 print("Best model pickled and saved to", file_path)
 
 
-# In[ ]:
+# In[10]:
 
 
 #Decision Tree
@@ -229,7 +229,7 @@ plt.title("Decision tree trained on all features")
 plt.show()
 
 
-# In[ ]:
+# In[11]:
 
 
 # tunning tree depth
@@ -267,7 +267,7 @@ plt.title(f"Decision tree trained on d = {best_d}")
 plt.show()
 
 
-# In[16]:
+# In[12]:
 
 
 X_train, X_valid, y_train, y_valid = train_test_split(X_standardized,y, train_size=0.75, random_state = 0)
@@ -283,7 +283,7 @@ cvs = cross_val_score(svm, X_standardized, y, cv = 10)
 print("default SVC cvs:",cvs)
 
 
-# In[17]:
+# In[13]:
 
 
 # Define hyperparameters to try
@@ -322,7 +322,7 @@ print(f"\nTest Set Accuracy with Best Hyperparameters: {test_accuracy}")
 print("Best Hyperparameters:", best_params)
 
 
-# In[19]:
+# In[14]:
 
 
 #1 vs. Rest
@@ -345,7 +345,6 @@ best_params = None
 for C in C_values:
     for kernel in kernel_values:
         for gamma in gamma_values:
-            # Use OneVsRestClassifier instead of directly instantiating SVC
             clf = OneVsRestClassifier(SVC(C=C, kernel=kernel, gamma=gamma))
             clf.fit(X_train, y_train)
 
@@ -369,7 +368,7 @@ print(f"\nTest Set Accuracy with Best Hyperparameters: {test_accuracy}")
 print("Best Hyperparameters:", best_params)
 
 
-# In[ ]:
+# In[15]:
 
 
 # 1 vs. 1
@@ -387,7 +386,6 @@ best_params = None
 for C in C_values:
     for kernel in kernel_values:
         for gamma in gamma_values:
-            # Use OneVsOneClassifier instead of directly instantiating SVC
             clf1 = OneVsOneClassifier(SVC(C=C, kernel=kernel, gamma=gamma))
             clf1.fit(X_train, y_train)
 
@@ -409,6 +407,17 @@ test_accuracy = accuracy_score(y_test, y_pred_test)
 print(f"\nTest Set Accuracy with Best Hyperparameters: {test_accuracy}")
 print("Best Hyperparameters:", best_params)
 
+
+
+# In[17]:
+
+
+# Pickle the best model, you can use the same method to pickle other models
+file_path = "best_SVM_1v1_model.pkl"
+with open(file_path, 'wb') as f:
+    pickle.dump(best_model, f)
+
+print("Best SVM model pickled and saved to", file_path)
 
 
 # In[25]:

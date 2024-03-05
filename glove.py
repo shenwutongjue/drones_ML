@@ -10,7 +10,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.neighbors import KNeighborsClassifier
 
-file_path = "best_knn_model.pkl"
+file_path = "best_SVM_1v1_model.pkl"
 with open(file_path, 'rb') as f:
     loaded_model = pickle.load(f)
     
@@ -30,7 +30,7 @@ serialPort = 'COM3'
 baudRate = 19200
 ser = Serial(serialPort,baudRate,timeout=1)
 inputBuffer = deque()
-
+first = True
 try:
     data = ser.readline()
     while True:
@@ -60,7 +60,11 @@ try:
             if len(inputBuffer) >= 20:
                 inputBuffer.pop()
                 print("predicting...")
-                X_Input_standardized = scaler.fit_transform(inputBuffer)
+                if first:
+                    X_Input_standardized = scaler.fit_transform(inputBuffer)
+                    first == False
+                else:
+                    X_Input_standardized = scaler.transform(inputBuffer)
                 #print("standardized")
                 #print(X_Input_standardized)
                 y_pred_test = loaded_model.predict(X_Input_standardized)
