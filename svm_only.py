@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[6]:
+# In[7]:
 
 
 import pandas as pd
@@ -22,7 +22,7 @@ from sklearn.svm import SVC
 import pickle
 
 
-# In[3]:
+# In[8]:
 
 
 hand_df = pd.read_csv("data/sensorFile (2).csv", na_values=['?'])
@@ -44,32 +44,31 @@ y_test = hand_df_test['Gesture']
 X_test = hand_df_test.drop(['Gesture'], axis = 1)
 
 
-# In[4]:
+# In[9]:
 
 
-# data preprocessing
-from sklearn.preprocessing import MinMaxScaler, StandardScaler
+from sklearn.preprocessing import  StandardScaler
+import pickle
 
-#Standarization
-min_max_scaler = MinMaxScaler()
-X_min_max_scaled = min_max_scaler.fit_transform(X)
 standard_scaler = StandardScaler()
 X_standardized = standard_scaler.fit_transform(X)
 
-#save the scaler
-file_path = "standard_scaler.pkl"
+# Save the scalers
+standard_file_path = "standard_scaler.pkl"
 
-with open(file_path, 'wb') as f:
+
+with open(standard_file_path, 'wb') as f:
     pickle.dump(standard_scaler, f)
 
-print("StandardScaler object is pickled and saved to", file_path)
+print("Scaler are pickled and saved to", standard_file_path)
 
-scaler = StandardScaler()
-X_standardized = scaler.fit_transform(X)
-X_test_standardized = scaler.fit_transform(X_test)
+with open(standard_file_path, 'rb') as f:
+    loaded_standard_scaler = pickle.load(f)
+
+X_test_standardized = loaded_standard_scaler.transform(X_test)
 
 
-# In[14]:
+# In[10]:
 
 
 #SVM with best params
@@ -90,7 +89,7 @@ print(f"\nTrain Set Accuracy with Best Hyperparameters: {train_accuracy}")
 print(f"\nTest Set Accuracy with Best Hyperparameters: {test_accuracy}")
 
 
-# In[15]:
+# In[11]:
 
 
 #save the model
