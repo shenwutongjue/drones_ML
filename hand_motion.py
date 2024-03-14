@@ -39,11 +39,13 @@ import pickle
 get_ipython().system('python --version')
 
 
-# In[3]:
+# In[15]:
 
 
-hand_df = pd.read_csv("data/sensorFile.csv", na_values=['?'])
-hand_df_test = pd.read_csv("data/sensorFile_Michael.csv", na_values=['?'])
+#hand_df = pd.read_csv("data/sensorFile.csv", na_values=['?'])
+hand_df = pd.read_csv("data/sensorFile (2).csv", na_values=['?'])
+#hand_df_test = pd.read_csv("data/sensorFile_Michael.csv", na_values=['?'])
+hand_df_test = pd.read_csv("data/Newglove_person1.csv", na_values=['?'])
 
 #hand_df = hand_df._get_numeric_data()
 
@@ -65,20 +67,24 @@ X_test = hand_df_test.drop(['Gesture'], axis = 1)
 print(X)
 
 
-# In[4]:
+# In[16]:
 
 
 # data preprocessing
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
 #Standarization
-min_max_scaler = MinMaxScaler()
-X_min_max_scaled = min_max_scaler.fit_transform(X)
 standard_scaler = StandardScaler()
 X_standardized = standard_scaler.fit_transform(X)
 
-#Check for feature dependency
-correlation_matrix = hand_df.corr()
+# Save the scalers
+standard_file_path = "standard_scaler.pkl"
+
+
+with open(standard_file_path, 'wb') as f:
+    pickle.dump(standard_scaler, f)
+
+print("Scaler are pickled and saved to", standard_file_path)
 
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -87,7 +93,7 @@ sns.heatmap(correlation_matrix, annot=True, cmap="coolwarm", fmt=".2f")
 plt.show()
 
 
-# In[5]:
+# In[17]:
 
 
 #Testing Standardization for Smaller Inputs
@@ -109,7 +115,7 @@ X_standardized1 = standard_scaler.fit_transform(X_test1)
 print("\n",X_standardized1)
 
 
-# In[6]:
+# In[18]:
 
 
 #save the scaler
@@ -123,7 +129,7 @@ with open(file_path, 'wb') as f:
 print("StandardScaler object is pickled and saved to", file_path)
 
 
-# In[7]:
+# In[19]:
 
 
 # Check for datapoint similarity
@@ -144,7 +150,7 @@ sns.pairplot(data_standardized, hue='class', palette='viridis')
 plt.show()
 
 
-# In[8]:
+# In[10]:
 
 
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
@@ -157,7 +163,6 @@ X_train, X_valid, y_train, y_valid = train_test_split(X_standardized,y, train_si
 
 X_test = X_test_standardized
 
-X_test = X_test_standardized
 
 print('\n k\tacc_train\tacc_valid\tacc_test\tMean CVS')
 
@@ -199,7 +204,7 @@ print('Accuracy on Validation set:', acc_valid)
 print('Accuracy on Test set:', acc_test)
 
 
-# In[9]:
+# In[10]:
 
 
 # Pickle the best model, you can use the same method to pickle other models
@@ -210,7 +215,7 @@ with open(file_path, 'wb') as f:
 print("Best model pickled and saved to", file_path)
 
 
-# In[10]:
+# In[11]:
 
 
 #Decision Tree
@@ -229,7 +234,7 @@ plt.title("Decision tree trained on all features")
 plt.show()
 
 
-# In[11]:
+# In[12]:
 
 
 # tunning tree depth
@@ -267,7 +272,7 @@ plt.title(f"Decision tree trained on d = {best_d}")
 plt.show()
 
 
-# In[12]:
+# In[13]:
 
 
 X_train, X_valid, y_train, y_valid = train_test_split(X_standardized,y, train_size=0.75, random_state = 0)
@@ -283,7 +288,7 @@ cvs = cross_val_score(svm, X_standardized, y, cv = 10)
 print("default SVC cvs:",cvs)
 
 
-# In[13]:
+# In[14]:
 
 
 # Define hyperparameters to try
@@ -322,7 +327,7 @@ print(f"\nTest Set Accuracy with Best Hyperparameters: {test_accuracy}")
 print("Best Hyperparameters:", best_params)
 
 
-# In[14]:
+# In[15]:
 
 
 #1 vs. Rest
@@ -368,11 +373,15 @@ print(f"\nTest Set Accuracy with Best Hyperparameters: {test_accuracy}")
 print("Best Hyperparameters:", best_params)
 
 
-# In[15]:
+# In[23]:
 
 
 # 1 vs. 1
 from sklearn.multiclass import OneVsOneClassifier
+
+X_train, X_valid, y_train, y_valid = train_test_split(X_standardized,y, train_size=0.75, random_state = 0)
+
+X_test = X_test_standardized
 
 # Define hyperparameters to try
 C_values = [0.001, 0.01, 0.1, 0.5, 1, 5, 10, 100]
@@ -388,7 +397,7 @@ for C in C_values:
         for gamma in gamma_values:
             clf1 = OneVsOneClassifier(SVC(C=C, kernel=kernel, gamma=gamma))
             clf1.fit(X_train, y_train)
-
+            y_pred_valid = clf1.predict(X_valid)
             valid_accuracy = accuracy_score(y_valid, y_pred_valid)
 
             print(f"C={C}, Kernel={kernel}, Gamma={gamma}, Validation Accuracy={valid_accuracy}")
@@ -403,21 +412,36 @@ final_clf1.fit(np.concatenate((X_train, X_valid)), np.concatenate((y_train, y_va
 
 # Evaluate on the test set
 y_pred_test = final_clf1.predict(X_test)
+y_pred_train = final_clf1.predict(X_train)
+y_pred_valid = final_clf1.predict(X_valid)
+train_accuracy = accuracy_score(y_train, y_pred_train)
+valid_accuracy = accuracy_score(y_valid, y_pred_valid)
 test_accuracy = accuracy_score(y_test, y_pred_test)
+print(f"\nTrain Set Accuracy with Best Hyperparameters: {train_accuracy}")
+print(f"\nValid Set Accuracy with Best Hyperparameters: {valid_accuracy}")
 print(f"\nTest Set Accuracy with Best Hyperparameters: {test_accuracy}")
 print("Best Hyperparameters:", best_params)
 
 
 
-# In[17]:
+# In[29]:
 
 
-# Pickle the best model, you can use the same method to pickle other models
+best_params = {'C': 10, 'kernel': 'rbf', 'gamma': 'scale'}
+final_clf1 = OneVsOneClassifier(SVC(**best_params))
+
+final_clf1.fit(X_standardized,y)
+
 file_path = "best_SVM_1v1_model.pkl"
-with open(file_path, 'wb') as f:
-    pickle.dump(best_model, f)
+with open(file_path, 'rb') as f:
+    loaded_model = pickle.load(f)
 
-print("Best SVM model pickled and saved to", file_path)
+y_pred_train = loaded_model.predict(X_standardized)
+y_pred_test = loaded_model.predict(X_test)
+train_accuracy = accuracy_score(y, y_pred_train)
+test_accuracy = accuracy_score(y_test, y_pred_test)
+print(f"\nTrain Set Accuracy with Best Hyperparameters: {train_accuracy}")
+print(f"\nTest Set Accuracy with Best Hyperparameters: {test_accuracy}")
 
 
 # In[25]:
